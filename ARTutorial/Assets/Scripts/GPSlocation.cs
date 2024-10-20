@@ -1,46 +1,28 @@
 using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using UnityEngine.UI;
 using UnityEngine;
 using UnityEngine.Android;
-using System;
-using static UnityEngine.EventSystems.EventTrigger;
-using Unity.VisualScripting;
-using TMPro;
-using UnityEngine.XR.ARFoundation;
 
 
 public class GPSlocation : MonoBehaviour
 {
-    [HideInInspector]
-    public double latitude = 0;
-    [HideInInspector]
-    public double longitude = 0;
+    public double latitude = 0; // 현재 위도
+    public double longitude = 0; // 현재 경도
 
-    [HideInInspector]
-    public float delay;
-    [HideInInspector]
-    public float maxtime = 5.0f;
+    private float delay; // 초기화 대기 시간
+    private float maxtime = 5.0f; // 최대 대기 시간
 
-    [HideInInspector]
-    public bool receiveGPS = false;
-
-    double detailed_num = 1.0;
+    private bool receiveGPS = false; // GPS 수신 여부
 
     private void Start()
     {
-        StartCoroutine(Gps_man());
-        Input.compass.enabled = true;
+        StartCoroutine(Gps_man()); // GPS 시작
+        Input.compass.enabled = true; // 나침반 활성화
     }
 
-    void Update()
-    {
-
-    }
     IEnumerator Gps_man()
     {
-        if (!Permission.HasUserAuthorizedPermission(Permission.FineLocation)) // 권한 요청하기  // GPS 요청 
+        // GPS 권한 요청
+        if (!Permission.HasUserAuthorizedPermission(Permission.FineLocation))
         {
             Permission.RequestUserPermission(Permission.FineLocation);
             while (!Permission.HasUserAuthorizedPermission(Permission.FineLocation))
@@ -49,24 +31,26 @@ public class GPSlocation : MonoBehaviour
             }
         }
 
-        // 권한이 거부되었을 때 처리
+        // 권한이 거부되었을 때
         if (!Permission.HasUserAuthorizedPermission(Permission.FineLocation))
         {
             Debug.Log("Location permission denied by the user.");
             yield break; // 코루틴 종료
         }
 
-        Input.location.Start(0.1f, 0.1f); ;
+        // 위치 서비스 시작
+        Input.location.Start(0.1f, 0.1f); ; // GPS가 0.1초마다 위치정보 업데이터, 최소 0.1m의 정확도로 수신
         while (Input.location.status == LocationServiceStatus.Initializing && delay < maxtime)
         {
-            yield return new WaitForSeconds(1);
-            delay++;
+            yield return new WaitForSeconds(1); // 초기화 대기
+            delay++; // 대기 시간 증가
         }
 
         receiveGPS = true;
 
         while (receiveGPS)
         {
+            // 현재 위치의 위도 및 경도 업데이트
             latitude = (double)Input.location.lastData.latitude;
             longitude = (double)Input.location.lastData.longitude;
 
@@ -76,12 +60,12 @@ public class GPSlocation : MonoBehaviour
         }
     }
 
-    // GPS 중지 처리 (앱 비활성화나 종료 시)
+    // 앱 비활성화, 종료시 GPS 중지
     void OnDisable()
     {
         if (Input.location.isEnabledByUser)
         {
-            Input.location.Stop(); // GPS 중지
+            Input.location.Stop();
             Debug.Log("GPS Service stopped.");
         }
     }
